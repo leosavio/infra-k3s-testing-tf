@@ -84,6 +84,13 @@ resource "aws_instance" "k3s" {
     Name = "k3s"
   }
 
+  #excluding k3s conf at destroy
+  # provisioner "local-exec" {
+  #   when    = destroy
+  #   command = <<-EOT
+  #     "rm -rf /workspace/k3s-remote-config.yaml"
+  #   EOT
+  # }
   
 } 
 
@@ -138,9 +145,10 @@ resource "null_resource" "k3s_setup_local" {
       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
       sudo mv kubectl /usr/local/bin/
-      scp -o StrictHostKeyChecking=no -i ~/.ssh/deployer_key ubuntu@${aws_instance.k3s.public_ip}:/etc/rancher/k3s/k3s.yaml ./k3s-remote-config.yaml
-      sed -i 's|https://127.0.0.1:6443|https://${aws_instance.k3s.public_ip}:6443|g' ./k3s-remote-config.yaml
-      alias kubectl="kubectl --kubeconfig=./k3s-remote-config.yaml --insecure-skip-tls-verify"
+      scp -o StrictHostKeyChecking=no -i ~/.ssh/deployer_key ubuntu@${aws_instance.k3s.public_ip}:/etc/rancher/k3s/k3s.yaml ../k3s-remote-config.yaml
+      sed -i 's|https://127.0.0.1:6443|https://${aws_instance.k3s.public_ip}:6443|g' ../k3s-remote-config.yaml
+      export KUBECONFIG=../k3s-remote-config.yaml
+      alias kubectl="kubectl --kubeconfig=../k3s-remote-config.yaml --insecure-skip-tls-verify"
       kubectl apply -f whoami.yaml
     EOT
   }
@@ -169,3 +177,7 @@ resource "null_resource" "k3s_setup_local" {
 
 #   depends_on = [aws_instance.k3s]
 # }
+
+output "record_name" {
+  value = aws_route53_record.k3s.name
+}

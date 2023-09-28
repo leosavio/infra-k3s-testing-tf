@@ -24,6 +24,20 @@ terraform init
 terraform apply
 ```
 
+## Observability
+- Datadog:
+```
+helm repo add datadog https://helm.datadoghq.com
+helm repo update
+helm install datadogv1 -f observability/datadog/values.yaml --set datadog.apiKey=key datadog/datadog
+helm uninstall datadogv1
+```
+- Optional:
+```
+helm plugin install https://github.com/databus23/helm-diff
+helm diff upgrade datadogv1 -f observability/datadog/values.yaml --set datadog.apiKey=key datadog/datadog
+```
+
 # ⚠️ Important Safety Tips
 - Cleanup: After you're done experimenting, ensure you remove the AWS user and any resources created to avoid unexpected costs. Run:
 ```
